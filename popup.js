@@ -4,8 +4,8 @@ document.addEventListener("DOMContentLoaded", function () {
     let submitTweetButton = document.getElementById("submitTweet");
     let closePopupButton = document.getElementById("closePopup");
 
-    // Load stored overlay state from Chrome storage
-    chrome.storage.local.get(["voteEnabled"], function (data) {
+    // Load stored overlay state and submitted tweets from Chrome storage
+    chrome.storage.local.get(["voteEnabled", "submittedTweets"], function (data) {
         console.log("Loaded overlay state:", data.voteEnabled);
         toggleOverlay.checked = data.voteEnabled ?? false;
     });
@@ -37,25 +37,53 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 
+    // Function to extract a valid Tweet URL
+    function extractTweetURL(input) {
+        let tweetRegex = /(https?:\/\/(www\.)?(twitter|x)\.com\/[^\/]+\/status\/\d+)/;
+        let match = input.match(tweetRegex);
+        return match ? match[1] : null; // Returns the extracted tweet URL or null
+    }
+
     // Handle Tweet Link Submission
     submitTweetButton.addEventListener("click", function () {
         let tweetLink = tweetLinkInput.value.trim();
+        let validTweetURL = extractTweetURL(tweetLink);
 
-        if (!tweetLink.includes("twitter.com") && !tweetLink.includes("x.com")) {
-            alert("Please enter a valid Twitter/X link!");
+        if (!validTweetURL) {
+            alert("Please enter a valid Twitter/X tweet link!");
             return;
         }
 
-        // Send message to background script to analyze tweet
-        chrome.runtime.sendMessage({ action: "analyzeTweet", tweet: tweetLink }, function (response) {
-            if (chrome.runtime.lastError) {
-                console.error("Error sending message:", chrome.runtime.lastError.message);
+        // Store the submitted tweet in chrome.storage
+        chrome.storage.local.get(["submittedTweets"], function (data) {
+            let submittedTweets = data.submittedTweets || [];
+
+            // Prevent duplicate submissions
+            if (!submittedTweets.includes(validTweetURL)) {
+                submittedTweets.push(validTweetURL);
+                chrome.storage.local.set({ submittedTweets }, function () {
+                    console.log("Updated submitted tweets:", submittedTweets);
+                });
             } else {
-                console.log("Tweet submission response:", response);
+                alert("This tweet has already been submitted.");
+                return;
             }
+
+            // Notify `content.js` to check for new tweets
+            chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+                if (!tabs.length || !tabs[0].id) return;
+
+                chrome.tabs.sendMessage(tabs[0].id, { action: "updateSubmittedTweets", tweets: submittedTweets }, (response) => {
+                    if (chrome.runtime.lastError) {
+                        console.warn("Error sending tweet list to content script:", chrome.runtime.lastError.message);
+                    } else {
+                        console.log("Submitted tweets updated successfully in content script:", response);
+                    }
+                });
+            });
         });
 
-        alert(`Submitted: ${tweetLink}`);
+        alert(`Submitted Tweet: ${validTweetURL}`);
         tweetLinkInput.value = ""; // Clear input after submission
     });
 
