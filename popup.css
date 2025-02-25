@@ -1,0 +1,157 @@
+@import url('https://fonts.googleapis.com/css2?family=Play:wght@400;700&display=swap');
+
+body {
+    color: white;
+    font-family: "Play", sans-serif;
+}
+
+.UnfakeBg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: -1;
+}
+
+.PopUpCon {
+    position: relative;
+    width: 300px;
+    height: auto;
+    padding: 10px;
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    z-index: 1000;
+    overflow: hidden;
+    border: none;
+    background-color: transparent;
+    justify-content: center;
+    align-items: center;
+}
+
+.CloseBtn {
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    margin: 0px 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    align-self: flex-end;
+}
+
+.UnfakeT {
+    font-family: "play", sans-serif;
+    font-weight: bold;
+    margin-top: -20px;
+}
+
+.ToggleCon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: -10px;
+    margin-bottom: 10px;
+}
+  
+.ToggleL {
+    font-size: 20px;
+    margin-right: 10px;
+    color: rgb(255, 255, 255, 0.9);
+}
+  
+.ToggleSwitch {
+    position: relative;
+    width: 40px;
+    height: 20px;
+}
+
+.ToggleSwitch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+  
+.slider {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgb(55, 65, 136);
+    border-radius: 20px;
+    border: 0.5px solid rgba(255, 255, 255, 0.6);
+    cursor: pointer;
+    transition: 0.4s;
+}
+  
+.slider:before {
+    content: "";
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    left: 2px;
+    top: 50%; /* Centers the ball vertically */
+    transform: translateY(-50%); /* Corrects alignment */
+    background-color: white;
+    border-radius: 50%;
+    transition: 0.4s;
+}
+
+input:checked + .slider {
+    background-color: rgb(26, 166, 26);
+}
+  
+input:checked + .slider:before {
+    transform: translate(20px, -50%);
+}
+
+.SubmitTweetCon {
+    display: flex;
+    flex-direction: column;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 20px;
+    justify-items: center;
+    align-items: center;
+    margin: 10px;
+}
+
+.SubmitL {
+    font-family: "play", sans-serif;
+}
+
+.TweetLink {
+    background-color: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    padding: 10px;
+    border-radius: 10px;
+    width: 260px;
+    margin: -5px 10px 0px 10px;
+}
+
+.TweetLink::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.SubmitBtn {
+    width: 150px;
+    padding: 10px;
+    border-radius: 40px;
+    border: 1.5px solid rgba(112, 149, 249, 0.2);
+    background: rgb(8, 62, 209);
+    color: white;
+    font-weight: bolder;
+    cursor: pointer;
+    transition: 0.3s ease-in-out, color 0.3s ease-in-out;
+    font-size: 14px;
+    align-content: center;
+    margin: 15px;
+}
+
+.SubmitBtn:hover {
+    background: rgb(209, 85, 8);
+    color: white;
+    border: 1.5px solid rgba(112, 149, 249, 0.2);
+}
