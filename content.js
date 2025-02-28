@@ -49,12 +49,13 @@ function insertVotingSection(tweetElement) {
         <div id="VoteCon">
             <div id="FirstRow"> 
                 <p class="CheckedAlgo"> Checked:
-                    <span class="Score">100%</span>
+                    <span class="Score">0%</span>
                     <span class="Stance">Uncertain</span>
                 </p>
-                <button class="RealBtn">Real</button>
-                <button class="UncertainBtn">Uncertain</button>
-                <button class="FakeBtn">Fake</button>
+                <button class="AIBtn">AI Check</button>
+                <button class="RealBtn" style="display:none;">Real</button>
+                <button class="UncertainBtn" style="display:none;">Uncertain</button>
+                <button class="FakeBtn" style="display:none;">Fake</button>
             </div>
             <div id="SecRow">
                 <input type="text" class="RefBox" placeholder="Submit Evidence Here"/>
@@ -82,6 +83,66 @@ function insertVotingSection(tweetElement) {
         tweetElement.querySelector(".FakeBtn").classList.remove("selected");
     }
 
+    tweetElement.querySelector(".AIBtn").addEventListener("click", function () {
+        // Hide the AI button and show the voting buttons
+        this.style.display = "none";
+        tweetElement.querySelector(".RealBtn").style.display = "inline-block";
+        tweetElement.querySelector(".UncertainBtn").style.display = "inline-block";
+        tweetElement.querySelector(".FakeBtn").style.display = "inline-block";
+        tweetElement.querySelector(".SubmitBtn").style.display = "inline-block";
+
+        // Extract the tweet URL
+        let tweetLinkElement = tweetElement.querySelector('a[href*="/status/"]');
+        let tweetURL = new URL(tweetLinkElement.href).href;
+
+        // --- 1. Submit the tweet for AI checking ---
+        fetch('http://localhost:5000/scrape-tweet', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ tweetUrl: tweetURL })
+        })
+        .then(response => response.json())
+        .then(scrapeData => {
+            if (scrapeData.tweet_text) {
+                // --- 2. Send scraped text to the AI model ---
+                return fetch('http://localhost:5001/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        text: scrapeData.tweet_text,
+                        post_id: scrapeData.tweet_id
+                    })
+                });
+            } else {
+                throw new Error("Scraped tweet text is missing.");
+            }
+        })
+        .then(response => response.json())
+        .then(predictData => {
+            // --- 3. Display AI prediction result in the overlay ---
+            tweetElement.querySelector(".CheckedAlgo .Score").textContent = predictData.confidence[0]; // AI confidence for "Real"
+            tweetElement.querySelector(".CheckedAlgo .Stance").textContent = predictData.prediction;
+
+            // Now enable voting buttons
+            tweetElement.querySelector(".RealBtn").style.display = "inline-block";
+            tweetElement.querySelector(".UncertainBtn").style.display = "inline-block";
+            tweetElement.querySelector(".FakeBtn").style.display = "inline-block";
+            tweetElement.querySelector(".SubmitBtn").style.display = "inline-block";
+
+            alert("AI Prediction: " + predictData.prediction + "\nConfidence: " + predictData.confidence);
+        })
+        .catch(error => {
+            console.error('Error in processing chain:', error);
+            alert("Failed to process tweet for AI prediction: " + error.message);
+        });
+    });
+
     // Event listeners for voting buttons and submitting evidence
     let vote = ""; 
     tweetElement.querySelector(".RealBtn").addEventListener("click", function () {
@@ -104,55 +165,62 @@ function insertVotingSection(tweetElement) {
     });
 
     tweetElement.querySelector(".SubmitBtn").addEventListener("click", function () {
-        let evidenceInput = tweetElement.querySelector(".RefBox").value.trim();
-    
-        // Check that a vote was selected
-        if (!vote) {
-            alert("No vote submitted!");
-            return;
+    let evidenceInput = tweetElement.querySelector(".RefBox").value.trim();
+
+    // Ensure a vote has been selected
+    if (!vote) {
+        alert("No vote submitted!");
+        return;
+    }
+
+    // Optionally alert evidence and clear the field if provided
+    if (evidenceInput) {
+        alert("Evidence submitted: " + evidenceInput);
+        tweetElement.querySelector(".RefBox").value = "";
+    }
+
+    // Extract the tweet URL
+    let tweetLinkElement = tweetElement.querySelector('a[href*="/status/"]');
+    let tweetURL = new URL(tweetLinkElement.href).href;
+
+    // --- 1. Submit the vote ---
+    fetch('http://localhost:5000/submit-vote', {
+        method: 'POST',
+        headers: { 
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+            tweetUrl: tweetURL,
+            vote: vote,
+            evidence: evidenceInput  // may be empty
+        }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === "success") {
+            alert("Vote successfully submitted!");
+            updateVoteCount(tweetElement, tweetURL);
+            clearSelection();
+            vote = ""; // Reset vote variable
+
+            // --- 2. Scrape the tweet text ---
+            // return fetch('http://localhost:5000/scrape-tweet', {
+            //     method: 'POST',
+            //     headers: {
+            //         'Content-Type': 'application/json',
+            //         'Accept': 'application/json'
+            //     },
+            //     body: JSON.stringify({ tweetUrl: tweetURL })
+            // });
+
+        } else {
+            throw new Error("Vote submission error: " + data.error);
         }
-    
-        // If evidence is provided, alert and clear it (optional)
-        if (evidenceInput) {
-            alert("Evidence submitted: " + evidenceInput);
-            tweetElement.querySelector(".RefBox").value = "";
-        }
-        // Proceed with submission regardless of evidenceInput
-        let tweetLinkElement = tweetElement.querySelector('a[href*="/status/"]');
-        let tweetURL = new URL(tweetLinkElement.href).href;
-    
-        fetch('http://localhost:5000/submit-vote', {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({
-                tweetUrl: tweetURL,
-                vote: vote,
-                evidence: evidenceInput  // may be empty
-            }),
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === "success") {
-                alert("Vote successfully submitted!");
-                updateVoteCount(tweetElement, tweetURL);
-                // Revert the vote button color by clearing selection
-                clearSelection();
-                vote = ""; // Reset vote variable if desired
-            } else {
-                alert("Error: " + data.error);
-            }
-        })
-        .catch(error => {
-            console.error('Fetch error:', error);
-            alert("Failed to submit vote.");
-        });
+    })
     });
     console.log("Voting section added below action buttons.");
 }
-
 
 // **Function to remove all overlays when the toggle is OFF**
 function removeVotingSection() {

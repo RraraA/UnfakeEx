@@ -33,7 +33,7 @@
     text-align: center;
 }
 
-.RealBtn, .UncertainBtn, .FakeBtn {
+.RealBtn, .UncertainBtn, .FakeBtn, .AIBtn {
     background-color: white;
     border: 0.7px solid rgb(255, 255, 255, 0.7);
     border-radius: 50px;
@@ -46,7 +46,7 @@
     text-align: center;
 }
 
-.RealBtn:hover, .UncertainBtn:hover, .FakeBtn:hover {
+.RealBtn:hover, .UncertainBtn:hover, .FakeBtn:hover, .AIBtn:hover {
     border: 0.7px solid rgb(29, 161, 242);
     color: rgb(29, 161, 242);
     background-color: transparent;
