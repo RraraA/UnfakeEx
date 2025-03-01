@@ -78,7 +78,7 @@ function updateAIResult(tweetElement, tweetURL) {
 
             } else if (data && data.results) {
                 // 🔹 AI-only case, hide AI Check button & show voting buttons
-                tweetElement.querySelector(".CheckedAlgo .Score").textContent = formatConfidence(data.results.confidence[0]);
+                tweetElement.querySelector(".CheckedAlgo .Score").textContent = formatConfidence(data.results.confidence[1]);
                 tweetElement.querySelector(".CheckedAlgo .Stance").textContent = data.results.prediction;
 
                 if (aiCheckButton) aiCheckButton.style.display = "none";  // Hide AI button
@@ -215,7 +215,7 @@ function insertVotingSection(tweetElement) {
             }
 
             // Format the confidence using your helper function
-            const formattedConfidence = formatConfidence(predictData.results.confidence[0]);
+            const formattedConfidence = formatConfidence(predictData.results.confidence[1]);
 
             //Updates the AI Score
             // tweetElement.querySelector(".CheckedAlgo .Score").textContent = formatConfidence(predictData.confidence[0]);
