@@ -3,7 +3,7 @@ let observer; // Define observer globally
 
 //Updates Vote Count
 function updateVoteCount(tweetElement, tweetURL) {
-    fetch(`http://systech.my:5000/get-vote-count?tweetUrl=${encodeURIComponent(tweetURL)}`)
+    fetch(`http://localhost:5000/get-vote-count?tweetUrl=${encodeURIComponent(tweetURL)}`)
         .then(response => response.json())
         .then(data => {
             // Update the designated total vote count field in the overlay
@@ -58,7 +58,7 @@ function updateVoteCount(tweetElement, tweetURL) {
 function updateAIResult(tweetElement, tweetURL) {
     let tweetID = tweetURL.split("/").pop();  // 🔹 Extract only tweet ID
 
-    fetch(`http://systech.my:5001/get-checked-result?tweetUrl=${encodeURIComponent(tweetID)}`)
+    fetch(`http://localhost:5001/get-checked-result?tweetUrl=${encodeURIComponent(tweetID)}`)
         .then(response => response.json())
         .then(data => {
             let aiCheckButton = tweetElement.querySelector(".AIBtn"); 
@@ -179,7 +179,7 @@ function insertVotingSection(tweetElement) {
         let tweetURL = new URL(tweetLinkElement.href).href;
 
         // --- 1. Submit the tweet for AI checking ---
-        fetch('http://systech.my:5000/scrape-tweet', {
+        fetch('http://localhost:5000/scrape-tweet', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -191,7 +191,7 @@ function insertVotingSection(tweetElement) {
         .then(scrapeData => {
             if (scrapeData.tweet_text) {
                 // --- 2. Send scraped text to the AI model ---
-                return fetch('http://systech.my:5001/predict', {
+                return fetch('http://localhost:5001/predict', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -249,19 +249,19 @@ function insertVotingSection(tweetElement) {
         vote = "Real";
         clearSelection();
         this.classList.add("selected");
-        alert("Vote submitted as: " + vote);
+        // alert("Vote submitted as: " + vote);
     });
     tweetElement.querySelector(".UncertainBtn").addEventListener("click", function () {
         vote = "Uncertain";
         clearSelection();
         this.classList.add("selected");
-        alert("Vote submitted as: " + vote);
+        // alert("Vote submitted as: " + vote);
     });
     tweetElement.querySelector(".FakeBtn").addEventListener("click", function () {
         vote = "Fake";
         clearSelection();
         this.classList.add("selected");
-        alert("Vote submitted as: " + vote);
+        // alert("Vote submitted as: " + vote);
     });
 
     tweetElement.querySelector(".SubmitBtn").addEventListener("click", function () {
@@ -284,7 +284,7 @@ function insertVotingSection(tweetElement) {
     let tweetURL = new URL(tweetLinkElement.href).href;
 
     // --- 1. Submit the vote ---
-    fetch('http://systech.my:5000/submit-vote', {
+    fetch('http://localhost:5000/submit-vote', {
         method: 'POST',
         headers: { 
             'Content-Type': 'application/json',
