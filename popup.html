@@ -8,39 +8,56 @@
 </head>
 <body>
     <div class="PopUpCon">
-        <!-- Background Image -->
         <img src="Unfake.png" alt="Unfake Logo" class="UnfakeBg">
-
-        <!-- Close Button -->
         <button class="CloseBtn" id="closePopup">
             <svg id="CloseBox" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="white">
                 <path d="M6 6L18 18M6 18L18 6" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
         </button>
 
-        <!-- Title -->
-        <h1 class="UnfakeT">Unfake</h1>
-
-        <!-- Toggle Switch -->
-        <div class="StatusCheckCon">
-            <div class="ToggleCon">
-                <span class="ToggleL">Overlay</span>
-                <label class="ToggleSwitch">
-                    <input type="checkbox" id="toggleOverlay">
-                    <span class="slider"></span>
-                </label>
+        <!-- Sign-In Section -->
+        <div id="signInContainer">
+            <div class="Intro">
+                <h1 class="SignInT">Sign In</h1>
+                <p id="welcomeP">Welcome to Unfake.</p>
             </div>
+            <div class="InputCon">
+                <input id="emailInput" type="email" placeholder="Email">
+                <input id="passInput" type="password" placeholder="Password">
+                <button id="signInBtn">Sign In</button>
+                <p id="errorMessage"></p>
+            </div> 
         </div>
 
-        <!-- Submit Tweet Section -->
-        <div class="SubmitTweetCon">
-            <p class="SubmitL">Submit Tweet Link:</p>
-            <input type="text" id="tweetLink" class="TweetLink" placeholder="Enter the tweet link here...">
-            <button class="SubmitBtn" id="submitTweet">Submit</button>
+        <!-- Voting Section (Hidden Initially) -->
+        <div id="voteSection" style="display: none;">
+            <h1 class="UnfakeT" >Unfake</h1>
+            <div class="StatusCheckCon">
+                <div class="ToggleCon">
+                    <span class="ToggleL">Overlay</span>
+                    <label class="ToggleSwitch">
+                        <input type="checkbox" id="toggleOverlay">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+            <!-- Submit Tweet Section -->
+            <div class="SubmitTweetCon">
+                <p class="SubmitL">Submit Tweet Link:</p>
+                <input type="text" id="tweetLink" placeholder="Enter the tweet link here...">
+                <button class="SubmitBtn" id="submitTweet">Submit</button>
+            </div>
+            <button id="signOutBtn">Sign Out</button>
         </div>
     </div>
 
-    <!-- JavaScript for functionality -->
+    <!-- Load Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+
+    <!-- Load Firebase Configuration & Popup Scripts -->
+    <script src="firebaseConfig.js"></script>
     <script src="popup.js"></script>
 </body>
 </html>

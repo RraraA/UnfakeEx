@@ -1,82 +1,63 @@
 document.addEventListener("DOMContentLoaded", function () {
-    let toggleOverlay = document.getElementById("toggleOverlay");
-    let tweetLinkInput = document.getElementById("tweetLink");
-    let submitTweetButton = document.getElementById("submitTweet");
-    let closePopupButton = document.getElementById("closePopup");
+    console.log("Popup loaded!");
 
-    // Load stored overlay state and submitted tweets from Chrome storage
-    chrome.storage.local.get(["voteEnabled", "submittedTweets"], function (data) {
-        console.log("Loaded overlay state:", data.voteEnabled);
-        toggleOverlay.checked = data.voteEnabled ?? false;
-    });
-
-    // Handle overlay toggle
-    toggleOverlay.addEventListener("change", function () {
-        let isEnabled = toggleOverlay.checked;
-        console.log("Toggling voting UI:", isEnabled);
-
-        chrome.storage.local.set({ voteEnabled: isEnabled }, function () {
-            console.log("Voting UI state updated:", isEnabled);
-        });
-
-        chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-            if (!tabs.length || !tabs[0].id) {
-                console.warn("No active tab found.");
-                return;
-            }
-
-            chrome.tabs.sendMessage(tabs[0].id, { action: "toggleVotingUI", enabled: isEnabled });
-        });
-    });
-
-    // Function to extract a valid Tweet URL
-    function extractTweetURL(input) {
-        let tweetRegex = /(https?:\/\/(www\.)?(twitter|x)\.com\/[^\/]+\/status\/\d+)/;
-        let match = input.match(tweetRegex);
-        return match ? match[1] : null;
+    // ✅ Ensure Firebase is initialized
+    if (!window.auth || !window.db) {
+        console.error("Firebase not initialized. Make sure firebaseConfig.js is loaded first.");
+        return;
     }
 
-    // Handle Tweet Link Submission
-    submitTweetButton.addEventListener("click", function () {
-        let tweetLink = tweetLinkInput.value.trim();
-        let validTweetURL = extractTweetURL(tweetLink);
+    // UI Elements
+    let signInContainer = document.getElementById("signInContainer");
+    let voteSection = document.getElementById("voteSection");
+    let emailInput = document.getElementById("emailInput");
+    let passwordInput = document.getElementById("passInput");
+    let signInBtn = document.getElementById("signInBtn");
+    let signOutBtn = document.getElementById("signOutBtn");
+    let errorMessage = document.getElementById("errorMessage");
 
-        if (!validTweetURL) {
-            alert("Please enter a valid Twitter/X tweet link!");
-            return;
+    // 🔍 Debug Firebase Initialization
+    console.log("Firebase Apps Loaded:", firebase.apps.length);
+    console.log("Auth Object:", window.auth);
+    console.log("Firestore Object:", window.db);
+
+    // 🔍 Check user authentication state
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            console.log("User signed in:", user.email);
+            signInContainer.style.display = "none"; 
+            voteSection.style.display = "block";
+        } else {
+            console.log("No user signed in.");
+            signInContainer.style.display = "block";
+            voteSection.style.display = "none";
         }
-
-        // Store the submitted tweet in Chrome storage
-        chrome.storage.local.get(["submittedTweets"], function (data) {
-            let submittedTweets = data.submittedTweets || [];
-
-            if (!submittedTweets.includes(validTweetURL)) {
-                submittedTweets.push(validTweetURL);
-                chrome.storage.local.set({ submittedTweets }, function () {
-                    console.log("Updated submitted tweets:", submittedTweets);
-
-                    // Notify content.js to apply the overlay
-                    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-                        if (!tabs.length || !tabs[0].id) return;
-
-                        chrome.tabs.sendMessage(tabs[0].id, {
-                            action: "updateSubmittedTweets",
-                            tweets: submittedTweets
-                        });
-                    });
-                });
-            } else {
-                alert("This tweet has already been submitted.");
-            }
-        });
-
-        // ✅ No more scraping here! Scraping now happens when evidence is submitted.
-
-        tweetLinkInput.value = "";
     });
 
-    // Close popup button
-    closePopupButton.addEventListener("click", function () {
+    // 🔹 Handle Email/Password Sign-In
+    signInBtn.addEventListener("click", () => {
+        let email = emailInput.value.trim();
+        let password = passwordInput.value.trim();
+
+        auth.signInWithEmailAndPassword(email, password)
+            .then(() => {
+                errorMessage.textContent = "";
+            })
+            .catch(error => {
+                console.error("Sign-in error:", error.message);
+                errorMessage.textContent = error.message;
+            });
+    });
+
+    // 🔹 Handle Sign-Out
+    signOutBtn.addEventListener("click", () => {
+        auth.signOut().then(() => {
+            console.log("User signed out.");
+        });
+    });
+
+    // Close Popup Button
+    document.getElementById("closePopup").addEventListener("click", function () {
         window.close();
     });
 });

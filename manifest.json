@@ -3,13 +3,12 @@
   "name": "Unfake Extension",
   "version": "1.0",
   "description": "Detects fake news on X",
-  "permissions": ["storage", 
-  "activeTab", 
-  "scripting", "tabs", "http://localhost:5000/", "http://localhost:5173/", "https://tkh-server2.access.ly:5000/*", "https://tkh-server2.access.ly:5001/*"],
+  "permissions": ["storage", "activeTab", "scripting", "tabs", "alarms","http://localhost:5000/", "http://localhost:5173/", "https://tkh-server2.access.ly:5000/*", "https://tkh-server2.access.ly:5001/*"],
   "host_permissions": ["https://x.com/*", "https://twitter.com/*", "https://tkh-server2.access.ly:5000/*", "https://tkh-server2.access.ly:5001/*"],
   "background": {
-    "service_worker": "firebaseConfig.js"
+    "service_worker": "background.js"
   },
+  
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
