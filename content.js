@@ -15,46 +15,6 @@ function updateVoteCount(tweetElement, tweetURL) {
 }
 
 //Updates AI Count
-// function updateAIResult(tweetElement, tweetURL) {
-//     fetch(`http://systech.my:5001/get-checked-result?tweetUrl=${encodeURIComponent(tweetURL)}`)
-//         .then(response => response.json())
-//         .then(data => {
-//             if (data && data.results) {
-//                 // Update the designated AI result fields in the overlay
-//                 tweetElement.querySelector(".CheckedAlgo .Score").textContent = data.results.confidence[0];
-//                 tweetElement.querySelector(".CheckedAlgo .Stance").textContent = data.results.prediction;
-//             } else {
-//                 console.error("No AI result found for this tweet.");
-//             }
-//         })
-//         .catch(error => {
-//             console.error("Error fetching updated AI result", error);
-//         });
-// }
-
-// function updateAIResult(tweetElement, tweetURL) {
-//     let tweetID = tweetURL.split("/").pop();  // 🔹 Extract only tweet ID
-
-//     fetch(`http://systech.my:5001/get-checked-result?tweetUrl=${encodeURIComponent(tweetID)}`)
-//         .then(response => response.json())
-//         .then(data => {
-//             if (data && data.result) {
-//                 // Checked Algorithm result exists
-//                 tweetElement.querySelector(".CheckedAlgo .Score").textContent = (data.result.final_score * 100).toFixed(2) + "%";
-//                 tweetElement.querySelector(".CheckedAlgo .Stance").textContent = data.result.classification;
-//             } else if (data && data.results) {
-//                 // AI-only case
-//                 tweetElement.querySelector(".CheckedAlgo .Score").textContent = formatConfidence(data.results.confidence[0]);
-//                 tweetElement.querySelector(".CheckedAlgo .Stance").textContent = data.results.prediction;
-//             } else {
-//                 console.error("No AI or Checked Algorithm result found for this tweet.");
-//             }
-//         })
-//         .catch(error => {
-//             console.error("Error fetching updated AI/Checked Algorithm result", error);
-//         });
-// }
-
 function updateAIResult(tweetElement, tweetURL) {
     let tweetID = tweetURL.split("/").pop();  // 🔹 Extract only tweet ID
 
@@ -444,6 +404,7 @@ setInterval(() => {
     });
 }, 5000); // Update every 5 seconds
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // let submittedTweets = [];
 // let observer; // Define observer globally
