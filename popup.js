@@ -39,20 +39,27 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    // 🔹 Sign-out action
     signOutBtn.addEventListener("click", () => {
         chrome.runtime.sendMessage({ action: "signOut" }, response => {
             if (response.success) {
-                chrome.storage.local.remove("user"); // Immediately remove user
                 signInContainer.style.display = "block";
                 voteSection.style.display = "none";
+                toggleOverlay.checked = false;  // <-- important: reset the UI checkbox clearly
+                chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
+                    if (tabs[0]?.id) {
+                        chrome.tabs.sendMessage(tabs[0].id, {
+                            action: "toggleVotingUI",
+                            enabled: false
+                        });
+                    }
+                });
             } else {
                 errorMessage.textContent = response.error;
             }
         });
-    });
+    });    
 
-    // 🔹 Handle overlay toggle
+    // Handle overlay toggle
     chrome.storage.local.get(["voteEnabled"], data => {
         toggleOverlay.checked = data.voteEnabled ?? false;
     });

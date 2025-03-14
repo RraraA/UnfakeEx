@@ -29,7 +29,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     if (request.action === "signOut") {
         chrome.storage.local.remove("user", () => {
-            sendResponse({ success: true });
+            chrome.storage.local.set({ voteEnabled: false }, () => {
+                sendResponse({ success: true });
+            });
         });
         return true;
     }
