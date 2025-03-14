@@ -1,69 +1,65 @@
-import { initializeApp } from "firebase/app";
-import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "firebase/auth";
-import { getFirestore, collection, addDoc } from "firebase/firestore";
+// ✅ Ensure Firebase SDK is initialized only once
+if (!firebase.apps.length) {
+    firebase.initializeApp({
+        apiKey: "AIzaSyCqZWRApBF5Kzna4EbHJQGJveUE9nEjjRo",
+        authDomain: "unfake-d8d9c.firebaseapp.com",
+        databaseURL: "https://unfake-d8d9c-default-rtdb.firebaseio.com",
+        projectId: "unfake-d8d9c",
+        storageBucket: "unfake-d8d9c.appspot.com",
+        messagingSenderId: "332199381098",
+        appId: "1:332199381098:web:5af91e85108de696602213",
+        measurementId: "G-G0QHNLNMZG"
+    });
+}
 
-const firebaseConfig = {
-    apiKey: "AIzaSyCqZWRApBF5Kzna4EbHJQGJveUE9nEjjRo",
-    authDomain: "unfake-d8d9c.firebaseapp.com",
-    databaseURL: "https://unfake-d8d9c-default-rtdb.firebaseio.com",
-    projectId: "unfake-d8d9c",
-    storageBucket: "unfake-d8d9c.appspot.com",
-    messagingSenderId: "332199381098",
-    appId: "1:332199381098:web:5af91e85108de696602213",
-    measurementId: "G-G0QHNLNMZG"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const provider = new GoogleAuthProvider();
+// ✅ Make Firebase globally accessible
+window.auth = firebase.auth();
+window.db = firebase.firestore();
+window.provider = new firebase.auth.GoogleAuthProvider();
 
 // ✅ Login Function
-export const loginUser = async () => {
+window.loginUser = async function () {
     try {
-        const result = await signInWithPopup(auth, provider);
+        const result = await auth.signInWithPopup(provider);
         const user = { uid: result.user.uid, email: result.user.email };
 
-        if (typeof chrome !== "undefined" && chrome.storage) {
+        if (chrome.storage) {
             chrome.storage.local.set({ user });
         }
         return user;
     } catch (error) {
         console.error("Login failed", error);
-        throw new Error(error.message);
+        alert(error.message);
     }
 };
 
 // ✅ Logout Function
-export const logoutUser = async () => {
+window.logoutUser = async function () {
     try {
-        await signOut(auth);
-        if (typeof chrome !== "undefined" && chrome.storage) {
+        await auth.signOut();
+        if (chrome.storage) {
             chrome.storage.local.remove("user");
         }
     } catch (error) {
         console.error("Logout failed", error);
-        throw new Error(error.message);
+        alert(error.message);
     }
 };
 
 // ✅ Sync Auth State
-export const listenForAuthChanges = (setUser) => {
-    onAuthStateChanged(auth, (user) => {
+window.listenForAuthChanges = function (setUser) {
+    auth.onAuthStateChanged((user) => {
         if (user) {
             const userData = { uid: user.uid, email: user.email };
-            if (typeof chrome !== "undefined" && chrome.storage) {
+            if (chrome.storage) {
                 chrome.storage.local.set({ user: userData });
             }
             setUser(userData);
         } else {
-            if (typeof chrome !== "undefined" && chrome.storage) {
+            if (chrome.storage) {
                 chrome.storage.local.remove("user");
             }
             setUser(null);
         }
     });
 };
-
-
-export { db, addDoc, collection, auth };

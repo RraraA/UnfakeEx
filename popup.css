@@ -41,6 +41,45 @@ body {
     justify-content: center;
     align-self: flex-end;
 }
+.Intro {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: -20px;
+}
+
+#welcomeP {
+    margin-top: -15px;
+}
+
+#signInContainer, #voteSection {
+    justify-items: center;
+    align-items: center;
+    width: 260px;
+}
+
+.InputCon {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    justify-items: center;
+    align-items: center;
+}
+
+#emailInput, #passInput{
+    background-color: rgba(0, 0, 0, 0.3);
+    border-radius: 50px;
+    border: none;
+    color: white;
+    padding: 10px;
+    width: 250px;
+}
+
+#emailInput::placeholder, #passInput::placeholder{
+    color: white;
+    padding-left: 10px;
+}
 
 .UnfakeT {
     font-family: "play", sans-serif;
@@ -122,25 +161,26 @@ input:checked + .slider:before {
     font-family: "play", sans-serif;
 }
 
-.TweetLink {
+#tweetLink {
     background-color: rgba(0, 0, 0, 0.2);
     border: 1px solid rgba(255, 255, 255, 0.4);
     padding: 10px;
     border-radius: 10px;
     width: 260px;
     margin: -5px 10px 0px 10px;
+    color: white;
 }
 
-.TweetLink::placeholder {
+#tweetLink::placeholder {
     color: rgba(255, 255, 255, 0.6);
 }
 
-.SubmitBtn {
+.SubmitBtn, #signInBtn{
     width: 150px;
     padding: 10px;
     border-radius: 40px;
     border: 1.5px solid rgba(112, 149, 249, 0.2);
-    background: rgb(8, 62, 209);
+    background: rgb(16, 79, 254);
     color: white;
     font-weight: bolder;
     cursor: pointer;
@@ -150,8 +190,27 @@ input:checked + .slider:before {
     margin: 15px;
 }
 
-.SubmitBtn:hover {
+.SubmitBtn:hover, #signInBtn:hover {
     background: rgb(209, 85, 8);
     color: white;
     border: 1.5px solid rgba(112, 149, 249, 0.2);
+}
+
+#signOutBtn {
+    background: transparent;
+    border: none;
+    color: white;
+    font-weight: lighter;
+    cursor: pointer;
+    transition: 0.3s ease-in-out, color 0.3s ease-in-out;
+    font-size: 14px;
+    padding: 5px 0px;
+    margin: 10px;
+}
+
+#signOutBtn:hover {
+    color: white;
+    border: 1.5px solid rgba(255, 255, 255, 0.6);
+    border-radius: 50px;
+    padding: 5px 15px;
 }
