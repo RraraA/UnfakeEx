@@ -1,116 +1,103 @@
-document.addEventListener("DOMContentLoaded", function () {
-    console.log("Popup loaded!");
+document.addEventListener("DOMContentLoaded", () => {
+    const signInBtn = document.getElementById("signInBtn");
+    const signOutBtn = document.getElementById("signOutBtn");
+    const emailInput = document.getElementById("emailInput");
+    const passwordInput = document.getElementById("passInput");
+    const errorMessage = document.getElementById("errorMessage");
+    const signInContainer = document.getElementById("signInContainer");
+    const voteSection = document.getElementById("voteSection");
+    const closePopupButton = document.getElementById("closePopup");
+    const toggleOverlay = document.getElementById("toggleOverlay");
+    const tweetLinkInput = document.getElementById("tweetLink");
+    const submitTweetButton = document.getElementById("submitTweet");
 
-    let toggleOverlay = document.getElementById("toggleOverlay");
-    let tweetLinkInput = document.getElementById("tweetLink");
-    let submitTweetButton = document.getElementById("submitTweet");
-    let closePopupButton = document.getElementById("closePopup");
-    let signInContainer = document.getElementById("signInContainer");
-    let voteSection = document.getElementById("voteSection");
-    let emailInput = document.getElementById("emailInput");
-    let passwordInput = document.getElementById("passInput");
-    let signInBtn = document.getElementById("signInBtn");
-    let signOutBtn = document.getElementById("signOutBtn");
-    let errorMessage = document.getElementById("errorMessage");
-
-    // 🔹 Observe Auth state changes
-    auth.onAuthStateChanged(user => {
-        if (user) {
-            // User is signed in
+    // 🔹 Check auth state clearly via storage (always accurate)
+    chrome.storage.local.get(["user"], (data) => {
+        if (data.user && data.user.email) {
             signInContainer.style.display = "none";
             voteSection.style.display = "block";
-            errorMessage.textContent = "";
-            console.log("User signed in:", user.email);
         } else {
-            // User is signed out
             signInContainer.style.display = "block";
             voteSection.style.display = "none";
-            console.log("User signed out.");
         }
     });
 
-    // 🔹 Handle Sign-in button click
+    // 🔹 Sign-in action
     signInBtn.addEventListener("click", () => {
-        let email = emailInput.value.trim();
-        let password = passwordInput.value.trim();
+        const email = emailInput.value.trim();
+        const password = passwordInput.value.trim();
 
-        auth.signInWithEmailAndPassword(email, password)
-            .then(() => {
+        chrome.runtime.sendMessage({ action: "signIn", email, password }, response => {
+            if (response.success) {
+                chrome.storage.local.set({ user: { email } }); // Immediately set user
+                signInContainer.style.display = "none";
+                voteSection.style.display = "block";
                 errorMessage.textContent = "";
-                emailInput.value = "";
-                passwordInput.value = "";
-            })
-            .catch(error => {
-                console.error("Sign-in error:", error.message);
-                errorMessage.textContent = error.message;
-            });
-    });
-
-    // 🔹 Handle Sign-Out
-    signOutBtn.addEventListener("click", () => {
-        auth.signOut().then(() => {
-            console.log("User signed out.");
+            } else {
+                errorMessage.textContent = response.error;
+            }
         });
     });
 
-    // Load stored overlay state and submitted tweets from Chrome storage
-    chrome.storage.local.get(["voteEnabled", "submittedTweets"], function (data) {
-        console.log("Loaded overlay state:", data.voteEnabled);
+    // 🔹 Sign-out action
+    signOutBtn.addEventListener("click", () => {
+        chrome.runtime.sendMessage({ action: "signOut" }, response => {
+            if (response.success) {
+                chrome.storage.local.remove("user"); // Immediately remove user
+                signInContainer.style.display = "block";
+                voteSection.style.display = "none";
+            } else {
+                errorMessage.textContent = response.error;
+            }
+        });
+    });
+
+    // 🔹 Handle overlay toggle
+    chrome.storage.local.get(["voteEnabled"], data => {
         toggleOverlay.checked = data.voteEnabled ?? false;
     });
 
-    // Handle overlay toggle
-    toggleOverlay.addEventListener("change", function () {
-        let isEnabled = toggleOverlay.checked;
-        console.log("Toggling voting UI:", isEnabled);
+    toggleOverlay.addEventListener("change", () => {
+        const isEnabled = toggleOverlay.checked;
+        chrome.storage.local.set({ voteEnabled: isEnabled });
 
-        chrome.storage.local.set({ voteEnabled: isEnabled }, function () {
-            console.log("Voting UI state updated:", isEnabled);
-        });
-
-        chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-            if (!tabs.length || !tabs[0].id) {
-                console.warn("No active tab found.");
-                return;
+        chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
+            if (tabs[0]?.id) {
+                chrome.tabs.sendMessage(tabs[0].id, { action: "toggleVotingUI", enabled: isEnabled });
             }
-
-            chrome.tabs.sendMessage(tabs[0].id, { action: "toggleVotingUI", enabled: isEnabled });
         });
     });
 
-    // Function to extract a valid Tweet URL
+    // 🔹 Extract valid Tweet URL
     function extractTweetURL(input) {
-        let tweetRegex = /(https?:\/\/(www\.)?(twitter|x)\.com\/[^\/]+\/status\/\d+)/;
-        let match = input.match(tweetRegex);
+        const tweetRegex = /(https?:\/\/(www\.)?(twitter|x)\.com\/[^\/]+\/status\/\d+)/;
+        const match = input.match(tweetRegex);
         return match ? match[1] : null;
     }
 
-    // Handle Tweet Link Submission
-    submitTweetButton.addEventListener("click", function () {
-        let tweetLink = tweetLinkInput.value.trim();
-        let validTweetURL = extractTweetURL(tweetLink);
+    // 🔹 Handle tweet submission
+    submitTweetButton.addEventListener("click", () => {
+        const tweetLink = tweetLinkInput.value.trim();
+        const validTweetURL = extractTweetURL(tweetLink);
 
         if (!validTweetURL) {
             alert("Please enter a valid Twitter/X tweet link!");
             return;
         }
 
-        chrome.storage.local.get(["submittedTweets"], function (data) {
+        chrome.storage.local.get(["submittedTweets"], data => {
             let submittedTweets = data.submittedTweets || [];
-
             if (!submittedTweets.includes(validTweetURL)) {
                 submittedTweets.push(validTweetURL);
-                chrome.storage.local.set({ submittedTweets }, function () {
-                    console.log("Updated submitted tweets:", submittedTweets);
+                chrome.storage.local.set({ submittedTweets });
 
-                    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-                        if (!tabs.length || !tabs[0].id) return;
-
+                chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
+                    if (tabs[0]?.id) {
                         chrome.tabs.sendMessage(tabs[0].id, {
                             action: "updateSubmittedTweets",
                             tweets: submittedTweets
                         });
-                    });
+                    }
                 });
             } else {
                 alert("This tweet has already been submitted.");
@@ -120,8 +107,6 @@ document.addEventListener("DOMContentLoaded", function () {
         tweetLinkInput.value = "";
     });
 
-    // Close popup button
-    closePopupButton.addEventListener("click", function () {
-        window.close();
-    });
+    // 🔹 Close popup action
+    closePopupButton.addEventListener("click", () => window.close());
 });
