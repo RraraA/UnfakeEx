@@ -11,28 +11,79 @@ document.addEventListener("DOMContentLoaded", () => {
     const tweetLinkInput = document.getElementById("tweetLink");
     const submitTweetButton = document.getElementById("submitTweet");
 
-    // 🔹 Check auth state clearly via storage (always accurate)
-    chrome.storage.local.get(["user"], (data) => {
+    const getUserCredibility = async (uid) => {
+        try {
+            const response = await fetch(`http://localhost:5000/get-user-credibility?uid=${uid}`);
+            const data = await response.json();
+            console.log("[DEBUG] Credibility Data:", data);  // ✅ Debug log
+    
+            if (data.credibility !== undefined) {
+                return data.credibility;
+            }
+            return 0;  // Default credibility if not found
+        } catch (error) {
+            console.error("[ERROR] Fetching user credibility:", error);
+            return 0;
+        }
+    };
+    
+    // 🔹 Check auth state and store credibility
+    chrome.storage.local.get(["user"], async (data) => {
         if (data.user && data.user.email) {
             signInContainer.style.display = "none";
             voteSection.style.display = "block";
+    
+            // Fetch credibility score
+            let credibility = await getUserCredibility(data.user.uid);
+            chrome.storage.local.set({ userCredibility: credibility, userUid: data.user.email });
+    
+            console.log(`[DEBUG] Stored Credibility: ${credibility}`);
         } else {
             signInContainer.style.display = "block";
             voteSection.style.display = "none";
         }
     });
 
+    // // 🔹 Check auth state clearly via storage (always accurate)
+    // chrome.storage.local.get(["user"], (data) => {
+    //     if (data.user && data.user.email) {
+    //         signInContainer.style.display = "none";
+    //         voteSection.style.display = "block";
+    //     } else {
+    //         signInContainer.style.display = "block";
+    //         voteSection.style.display = "none";
+    //     }
+    // });
+
     // 🔹 Sign-in action
     signInBtn.addEventListener("click", () => {
         const email = emailInput.value.trim();
         const password = passwordInput.value.trim();
 
-        chrome.runtime.sendMessage({ action: "signIn", email, password }, response => {
+        chrome.runtime.sendMessage({ action: "signIn", email, password }, async (response) => {
             if (response.success) {
-                chrome.storage.local.set({ user: { email } }); // Immediately set user
+                console.log(`[DEBUG] User signed in: ${response.email}, UID: ${response.uid}`);
+
+                
+                chrome.storage.local.set({ 
+                    user: { email: response.email, uid: response.uid }, 
+                    userUid: response.uid 
+                });
+
+                // 🔹 Fetch and store credibility after login
+                let credibility = await getUserCredibility(response.uid);
+                chrome.storage.local.set({ userCredibility: credibility });
+
+                console.log(`[DEBUG] Updated Credibility after login: ${credibility}`);
+        
                 signInContainer.style.display = "none";
                 voteSection.style.display = "block";
                 errorMessage.textContent = "";
+
+                // chrome.storage.local.set({ user: { email } }); // Immediately set user
+                // signInContainer.style.display = "none";
+                // voteSection.style.display = "block";
+                // errorMessage.textContent = "";
             } else {
                 errorMessage.textContent = response.error;
             }

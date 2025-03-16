@@ -3,7 +3,7 @@ let observer; // Define observer globally
 
 //Updates Vote Count
 function updateVoteCount(tweetElement, tweetURL) {
-    fetch(`https://tkh-server2.access.ly:5000/get-vote-count?tweetUrl=${encodeURIComponent(tweetURL)}`)
+    fetch(`http://localhost:5000/get-vote-count?tweetUrl=${encodeURIComponent(tweetURL)}`)
         .then(response => response.json())
         .then(data => {
             // Update the designated total vote count field in the overlay
@@ -58,7 +58,7 @@ function updateVoteCount(tweetElement, tweetURL) {
 function updateAIResult(tweetElement, tweetURL) {
     let tweetID = tweetURL.split("/").pop();  // 🔹 Extract only tweet ID
 
-    fetch(`https://tkh-server2.access.ly:5001/get-checked-result?tweetUrl=${encodeURIComponent(tweetID)}`)
+    fetch(`http://localhost:5001/get-checked-result?tweetUrl=${encodeURIComponent(tweetID)}`)
         .then(response => response.json())
         .then(data => {
             let aiCheckButton = tweetElement.querySelector(".AIBtn"); 
@@ -188,7 +188,7 @@ function insertVotingSection(tweetElement) {
         let tweetURL = new URL(tweetLinkElement.href).href;
     
         // --- 1. Submit the tweet for AI checking ---
-        fetch('https://tkh-server2.access.ly:5000/scrape-tweet', {
+        fetch('http://localhost:5000/scrape-tweet', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
             body: JSON.stringify({ tweetUrl: tweetURL })
@@ -197,7 +197,7 @@ function insertVotingSection(tweetElement) {
         .then(scrapeData => {
             if (scrapeData.tweet_text) {
                 // --- 2. Send scraped text to the AI model ---
-                return fetch('https://tkh-server2.access.ly:5001/predict', {
+                return fetch('http://localhost:5001/predict', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
                     body: JSON.stringify({ text: scrapeData.tweet_text, post_id: scrapeData.tweet_id })
@@ -278,54 +278,124 @@ function insertVotingSection(tweetElement) {
     });
 
     tweetElement.querySelector(".SubmitBtn").addEventListener("click", function () {
-    let evidenceInput = tweetElement.querySelector(".RefBox").value.trim();
-
-    // Ensure a vote has been selected
-    if (!vote) {
-        alert("No vote submitted!");
-        return;
-    }
-
-    // Optionally alert evidence and clear the field if provided
-    if (evidenceInput) {
-        alert("Evidence submitted: " + evidenceInput);
-        tweetElement.querySelector(".RefBox").value = "";
-    }
-
-    // Extract the tweet URL
-    let tweetLinkElement = tweetElement.querySelector('a[href*="/status/"]');
-    let tweetURL = new URL(tweetLinkElement.href).href;
-
-    // --- 1. Submit the vote ---
-    fetch('https://tkh-server2.access.ly:5000/submit-vote', {
-        method: 'POST',
-        headers: { 
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-        },
-        body: JSON.stringify({
-            tweetUrl: tweetURL,
-            vote: vote,
-            evidence: evidenceInput  // may be empty
-        }),
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.status === "success") {
-            alert("Vote successfully submitted!");
-            updateVoteCount(tweetElement, tweetURL);
-            updateAIResult(tweetElement, tweetURL); // 🔹 Refresh AI results
-            pollCheckedAlgorithm(tweetElement, tweetURL); // 🔹 Start polling Checked Algorithm updates
-            clearSelection();
-            vote = ""; // Reset vote variable
-
-        } else {
-            throw new Error("Vote submission error: " + data.error);
+        let evidenceInput = tweetElement.querySelector(".RefBox").value.trim();
+    
+        // Ensure a vote has been selected
+        if (!vote) {
+            alert("No vote submitted!");
+            return;
         }
-    })
+    
+        // Extract the tweet URL
+        let tweetLinkElement = tweetElement.querySelector('a[href*="/status/"]');
+        let tweetURL = new URL(tweetLinkElement.href).href;
+    
+        // 🔹 Retrieve the logged-in user's UID and credibility
+        chrome.storage.local.get(["user", "userUid", "userCredibility"], (data) => {
+            if (!data.user || !data.user.uid) {
+                alert("You must be logged in to vote.");
+                return;
+            }
+    
+            const loggedInUid = data.user.uid;
+            const credibility = data.userCredibility || 0; // Default credibility if missing
+    
+            console.log(`[DEBUG] Submitting vote with UID: ${loggedInUid}, Credibility: ${credibility}`);
+    
+            // --- 1. Submit the vote ---
+            fetch('http://localhost:5000/submit-vote', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    tweetUrl: tweetURL,
+                    vote: vote,
+                    evidence: evidenceInput,  // may be empty
+                    userId: loggedInUid,  // 🔹 Ensure this matches the `app.py` field name
+                    credibility: credibility
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === "success") {
+                    alert("Vote successfully submitted!");
+                    updateVoteCount(tweetElement, tweetURL);
+                    updateAIResult(tweetElement, tweetURL); // 🔹 Refresh AI results
+                    pollCheckedAlgorithm(tweetElement, tweetURL); // 🔹 Start polling Checked Algorithm updates
+                    clearSelection();
+                    vote = ""; // Reset vote variable
+    
+                    // 🔹 After vote submission, trigger checked algorithm with credibility
+                    fetch(`http://localhost:5001/result?post_id=${tweetURL.split("/").pop()}&uid=${loggedInUid}&credibility=${credibility}`)
+                        .then(res => res.json())
+                        .then(checkedResult => {
+                            console.log("Checked Algorithm Result:", checkedResult);
+                            updateVoteCount(tweetElement, tweetURL);
+                            updateAIResult(tweetElement, tweetURL);
+                        })
+                        .catch(err => console.error("Error fetching checked algorithm result:", err));
+    
+                } else {
+                    throw new Error("Vote submission error: " + data.error);
+                }
+            })
+            .catch(error => console.error("Error submitting vote:", error));
+        });
     });
     console.log("Voting section added below action buttons.");
 }
+
+//     tweetElement.querySelector(".SubmitBtn").addEventListener("click", function () {
+//     let evidenceInput = tweetElement.querySelector(".RefBox").value.trim();
+
+//     // Ensure a vote has been selected
+//     if (!vote) {
+//         alert("No vote submitted!");
+//         return;
+//     }
+
+//     // Optionally alert evidence and clear the field if provided
+//     if (evidenceInput) {
+//         alert("Evidence submitted: " + evidenceInput);
+//         tweetElement.querySelector(".RefBox").value = "";
+//     }
+
+//     // Extract the tweet URL
+//     let tweetLinkElement = tweetElement.querySelector('a[href*="/status/"]');
+//     let tweetURL = new URL(tweetLinkElement.href).href;
+
+//     // --- 1. Submit the vote ---
+//     fetch('http://localhost:5000/submit-vote', {
+//         method: 'POST',
+//         headers: { 
+//             'Content-Type': 'application/json',
+//             'Accept': 'application/json'
+//         },
+//         body: JSON.stringify({
+//             tweetUrl: tweetURL,
+//             vote: vote,
+//             evidence: evidenceInput  // may be empty
+//         }),
+//     })
+//     .then(response => response.json())
+//     .then(data => {
+//         if (data.status === "success") {
+//             alert("Vote successfully submitted!");
+//             updateVoteCount(tweetElement, tweetURL);
+//             updateAIResult(tweetElement, tweetURL); // 🔹 Refresh AI results
+//             pollCheckedAlgorithm(tweetElement, tweetURL); // 🔹 Start polling Checked Algorithm updates
+//             clearSelection();
+//             vote = ""; // Reset vote variable
+
+//         } else {
+//             throw new Error("Vote submission error: " + data.error);
+//         }
+//     })
+//     });
+//     console.log("Voting section added below action buttons.");
+// }
 
 // ⏳ Poll Checked Algorithm result every 5 seconds after a vote
 function pollCheckedAlgorithm(tweetElement, tweetURL) {
